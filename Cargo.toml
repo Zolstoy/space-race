@@ -1,0 +1,9 @@
+[package]
+name = "space-race"
+version = "0.1.0"
+edition = "2021"
+authors = ["Zolstoy <zolstoy.dev@gmail.com>"]
+description = "Space Race game server side"
+license = "MIT"
+
+[dependencies]
