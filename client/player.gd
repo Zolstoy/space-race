@@ -22,14 +22,14 @@ func _process(_delta):
 			get_tree().quit()
 		var variant = JSON.parse_string(packet_str)
 		print(variant)
-		if variant.has("Player"):
-			var coords = variant["Player"]["coords"]
+		if variant.has("PlayerState"):
+			var coords = variant["PlayerState"]["position"]
 			set_position(Vector3(coords[0], coords[1], coords[2]))
-		elif variant.has("Others"):
-			var others_update = variant["Others"] as Array
+		elif variant.has("OthersState"):
+			var others_update = variant["OthersState"] as Array
 			for other_player in others_update:
 				var id = int(other_player["id"])
-				others[id].velocity = Vector3(other_player["coords"][0], other_player["coords"][1], other_player["coords"][2])
+				others[id].velocity = Vector3(other_player["position"][0], other_player["position"][1], other_player["position"][2])
 
 func connect_to_server(host: String, port: int):
 	socket = WebSocketPeer.new()
