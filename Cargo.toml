@@ -16,3 +16,7 @@ log = "0.4.27"
 env_logger = "0.11.8"
 serde = {version="1.0.219", features = ["derive"]}
 crossbeam = "0.8.4"
+tokio-stream = "0.1.17"
+test-helpers-async = "0.2.3"
+anyhow = "1.0.99"
+futures-timeout = "0.1.3"

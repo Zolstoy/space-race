@@ -12,6 +12,7 @@ func _process(_delta):
 	var socket_state = socket.get_ready_state()
 
 	if socket_state == WebSocketPeer.STATE_CLOSED || socket_state == WebSocketPeer.STATE_CLOSING:
+		printerr("Socket closed")
 		get_tree().quit()
 		
 	
