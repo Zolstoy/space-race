@@ -2,12 +2,15 @@
 
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
-use tokio::{net::{TcpListener, TcpStream}, sync::{mpsc, Mutex}};
-use tokio_stream::wrappers::ReceiverStream;
-use tungstenite::protocol::Message;
 use futures::{SinkExt, StreamExt};
+use serde::{Deserialize, Serialize};
+use tokio::{
+    net::{TcpListener, TcpStream},
+    sync::{mpsc, Mutex},
+};
+use tokio_stream::wrappers::ReceiverStream;
 use tokio_tungstenite::tungstenite;
-use serde::{Serialize, Deserialize};
+use tungstenite::protocol::Message;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Player {
@@ -16,7 +19,7 @@ struct Player {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Others{
+struct Others {
     position: (f32, f32, f32),
     velocity: (f32, f32, f32),
 }
@@ -39,14 +42,18 @@ enum ClientState {
     Initialized,
 }
 
-struct Client{
+struct Client {
     state_tx: mpsc::Sender<GameState>,
     action_rx: crossbeam::channel::Receiver<PlayerAction>,
     addr: std::net::SocketAddr,
     state: ClientState,
 }
 
-async fn handle_connection(stream: TcpStream, state_rx: mpsc::Receiver<GameState>, _action_tx: crossbeam::channel::Sender<PlayerAction>) -> () {
+async fn handle_connection(
+    stream: TcpStream,
+    state_rx: mpsc::Receiver<GameState>,
+    _action_tx: crossbeam::channel::Sender<PlayerAction>,
+) -> () {
     let addr = stream.peer_addr().expect("Invalid address");
     log::info!("New connection from {}", addr);
 
@@ -99,16 +106,14 @@ async fn handle_connection(stream: TcpStream, state_rx: mpsc::Receiver<GameState
                 }
             }
         }
-    }    
+    }
 }
 
-pub async fn run(addr: &str)
-{
-    let listener = TcpListener::bind(addr).await.expect(format!("Failed to bind to {}", addr).as_str());
+pub async fn run_with_listener(listener: TcpListener) {
+    let addr = listener.local_addr().unwrap();
+    let port = addr.port();
 
-    env_logger::init();
-
-    log::info!("Server started on {}", addr);
+    log::info!("Server started on {}:{}", addr.ip(), port);
 
     let clients = Arc::new(Mutex::new(HashMap::<u32, Client>::new()));
 
@@ -136,8 +141,6 @@ pub async fn run(addr: &str)
                     }
                 }
             }
-
-
         }
     });
 
@@ -146,9 +149,25 @@ pub async fn run(addr: &str)
         let (action_tx, action_rx) = crossbeam::channel::bounded::<PlayerAction>(100);
         let mut clients_lock = clients.lock().await;
         let client_id = clients_lock.len() as u32;
-        clients_lock.insert(client_id, Client { state_tx, action_rx, addr: stream.peer_addr().expect("Invalid address"), state: ClientState::Connected });
+        clients_lock.insert(
+            client_id,
+            Client {
+                state_tx,
+                action_rx,
+                addr: stream.peer_addr().expect("Invalid address"),
+                state: ClientState::Connected,
+            },
+        );
         tokio::spawn(handle_connection(stream, state_rx, action_tx));
     }
 
     log::info!("Server ended gracefully");
+}
+
+pub async fn run(addr: &str, port: u16) {
+    let listener = TcpListener::bind((addr, port))
+        .await
+        .expect(format!("Failed to bind to {}:{}", addr, port).as_str());
+
+    run_with_listener(listener).await;
 }

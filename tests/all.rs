@@ -16,6 +16,7 @@ mod all {
     }
 
     pub fn before_all() {
+        env_logger::init();
     }
 
     const TIMEOUT_DURATION: u64 = 20;
@@ -24,32 +25,31 @@ mod all {
     #[tokio::test]
     async fn case_01_connect() -> anyhow::Result<()> {
 
-        let socket = tokio::net::TcpSocket::new_v4()?;
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let port = listener.local_addr()?.port();
+        let hdl = space_race::run_with_listener(listener);
 
-        tokio::spawn(async {
-            space_race::run("127.0.0.1:8080").await;
-        });
-
-        test!(socket.connect(std::net::SocketAddr::V4(
-            std::net::SocketAddrV4::new(std::net::Ipv4Addr::LOCALHOST, 8080),
+        test!(tokio::net::TcpStream::connect(std::net::SocketAddr::V4(
+            std::net::SocketAddrV4::new(std::net::Ipv4Addr::LOCALHOST, port),
         )))?;
+
+        hdl.await;
         Ok(())
     }
 
     #[tokio::test]
     async fn case_02_websocket_handshake() -> anyhow::Result<()> {
-        let socket = tokio::net::TcpSocket::new_v4()?;
-
         tokio::spawn(async {
-            space_race::run("127.0.0.1:8080").await;
+            space_race::run("127.0.0.1", 0).await;
         });
 
-        socket.connect(std::net::SocketAddr::V4(
+        let stream = tokio::net::TcpStream::connect(std::net::SocketAddr::V4(
             std::net::SocketAddrV4::new(std::net::Ipv4Addr::LOCALHOST, 8080),
         ))
         .await?;
 
-        let (ws_stream, _) = tokio_tungstenite::accept_async(socket).await?;
+        test!(tokio_tungstenite::accept_async(stream))?;
+
         Ok(())
     }
 }
