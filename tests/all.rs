@@ -46,13 +46,6 @@ mod all {
         let stream = tokio::net::TcpStream::connect(std::net::SocketAddr::V4(
             std::net::SocketAddrV4::new(std::net::Ipv4Addr::LOCALHOST, port))).await?;
 
-
-        // let request = http::Request::builder()
-        //     .method("GET")
-        //     .uri(format!("ws://localhost:{}/", port))
-        //     .body(())
-        //     .unwrap();
-
         tokio_tungstenite::client_async(format!("ws://127.0.0.1:{}", port), stream)
             .await?;
 
