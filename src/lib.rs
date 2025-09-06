@@ -61,6 +61,7 @@ async fn handle_connection(
         .await
         .expect("Failed to upgrade to WebSocket");
 
+    log::info!("WebSocket connection established: {}", addr);
     // let player = Player {
     //     position: (0.0, 0.0, 0.0),
     //     velocity: (0.0, 0.0, 0.0),
